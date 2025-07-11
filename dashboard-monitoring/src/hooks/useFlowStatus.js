@@ -1,21 +1,28 @@
+// src/hooks/useFlowStatus.js (Versi Baru yang Fleksibel)
+
 import { useEffect, useState } from "react";
 
+// Tambahkan parameter 'initialDockCount' dengan nilai default 4
 export const useFlowStatus = (
   endpoint = "/statusAmr1",
-  backendIP = "localhost:1880",
-  prot = "ws"
+  initialDockCount = 4
 ) => {
-  const [status, setStatus] = useState([0, 0, 0, 0]);
+  
+  // Buat state awal secara dinamis berdasarkan initialDockCount
+  const [status, setStatus] = useState(Array(initialDockCount).fill(0));
 
   useEffect(() => {
-    // Perbaiki path agar tidak double slash
-    const url = `${prot}://${backendIP}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+    // Bagian ini tidak perlu diubah, sudah benar
+    const url = `${process.env.REACT_APP_WEBSOCKET_URL}${endpoint}`;
     const socket = new WebSocket(url);
 
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        setStatus(data);
+        // Pastikan data yang diterima adalah array sebelum di-set
+        if (Array.isArray(data)) {
+          setStatus(data);
+        }
       } catch (e) {
         console.error(`Error parsing status from ${endpoint}:`, e);
       }
@@ -26,7 +33,7 @@ export const useFlowStatus = (
     };
 
     return () => socket.close();
-  }, [backendIP, prot, endpoint]);
+  }, [endpoint]); // Dependensi tetap
 
   return status;
 };

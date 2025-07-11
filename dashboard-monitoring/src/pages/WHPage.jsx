@@ -11,14 +11,15 @@ import {
   Search,
   PauseCircle,
   Warehouse,
-  TrendingUp,
   Database,
 } from 'lucide-react';
 import CounterBarang from "../components/CounterBarang";
 import useKukaLiveData from "../hooks/KukaData";
 import useRequestData from "../hooks/useRequestData";
-import useWMSData from "../hooks/useWMSdata";
+// import useWMSData from "../hooks/useWMSdata";
 import kukaImg from "../assets/kuka.png";
+// import { AMR1_LABELS, AMR2_LABELS } from '../config/robotConfig';
+// import { getCurrentDockInfo } from "../config/robotConfig";
 
 // Animated Background
 const AnimatedBackground = () => (
@@ -51,12 +52,19 @@ const MiniCardRobot = ({ robot, indicatorStatus, ledType, pageType, darkMode = t
     return "bg-red-500";
   };
 
+   const formatRunTime = (minutes) => {
+        if (isNaN(minutes)) return "0h 0m";
+        const hrs = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hrs}h ${mins}m`;
+    };
+
   return (
     <div className="group relative overflow-hidden rounded-2xl shadow-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1">
       <div className={`absolute inset-0 bg-gradient-to-br ${
         isAMR1 
           ? 'from-green-900/90 via-green-800/80 to-green-700/90' 
-          : 'from-red-900/90 via-red-800/80 to-red-700/90'
+          : 'from-cyan-500/90 via-blue-700/80 to-indigo-900/90'
       } opacity-90`}></div>
       
       <div className="relative z-10 p-4">
@@ -118,7 +126,7 @@ const MiniCardRobot = ({ robot, indicatorStatus, ledType, pageType, darkMode = t
             <div className="text-center">
               <Activity className="w-4 h-4 text-blue-400 mx-auto" />
               <span className="text-xs font-bold text-white">
-                {Math.round(robot.runTime / 60) || 0}h
+                {formatRunTime(robot.runTime)}
               </span>
             </div>
           </div>
@@ -127,7 +135,7 @@ const MiniCardRobot = ({ robot, indicatorStatus, ledType, pageType, darkMode = t
             <div className="text-center">
               <AlertCircle className={`w-4 h-4 mx-auto ${robot.errorMessage ? 'text-orange-400' : 'text-gray-400'}`} />
               <span className={`text-xs font-bold ${robot.errorMessage ? 'text-orange-400' : 'text-gray-400'}`}>
-                {robot.errorMessage ? 'Error' : 'OK'}
+                {robot.errorMessage}
               </span>
             </div>
           </div>
@@ -155,12 +163,12 @@ const RequestCard = ({ request, index }) => {
     completed: {
       color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
       icon: CheckCircle,
-      text: 'Selesai'
+      text: 'Finish'
     },
     processing: {
       color: 'text-blue-400 bg-blue-400/10 border-blue-400/30',
       icon: Activity,
-      text: 'Diproses'
+      text: 'Processing'
     }
   };
 
@@ -272,7 +280,7 @@ const StockItem = ({ stock, index }) => {
                 {status.status}
               </span>
               <span className="text-xs text-gray-400">
-                {stock.jumlah} unit
+                {stock.jumlah} <span className="text-sm text-gray-400 font-normal">unit</span>
               </span>
             </div>
           </div>
@@ -304,19 +312,12 @@ const StockItem = ({ stock, index }) => {
 };
 
 // Stats Card Component// Stats Card Component (lanjutan)
-const StatsCard = ({ title, value, icon: Icon, color, trend }) => (
-  <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 
-    hover:border-gray-600/50 transition-all duration-300">
+const StatsCard = ({ title, value, icon: Icon, color }) => (
+  <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-xs text-gray-400">{title}</p>
+        <p className="text-sm text-gray-400">{title}</p>
         <p className={`text-3xl font-bold ${color} mt-1`}>{value}</p>
-        {trend && (
-          <div className="flex items-center gap-1 mt-2">
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs text-emerald-400">{trend}</span>
-          </div>
-        )}
       </div>
       <Icon className={`w-8 h-8 ${color} opacity-30`} />
     </div>
@@ -324,9 +325,9 @@ const StatsCard = ({ title, value, icon: Icon, color, trend }) => (
 );
 
 const WHPage = () => {
+
   const { robots, indicatorStatus } = useKukaLiveData("amr1", "led1", "wh");
-  const { requestList } = useRequestData();
-  const { StockList } = useWMSData();
+  const { requestList, stokData } = useRequestData();
   
   const [activeTab, setActiveTab] = useState('requests');
   const [searchTerm, setSearchTerm] = useState('');
@@ -339,21 +340,31 @@ const WHPage = () => {
   }, []);
 
   // Calculate stats
-  const totalStock = StockList.reduce((sum, item) => sum + item.jumlah, 0);
-  const lowStockItems = StockList.filter(item => item.jumlah < 20).length;
+  const totalStock = stokData.reduce((sum, item) => sum + (item.jumlah || 0), 0);
+  // const lowStockItems = stokData.filter(item => item.jumlah < 20).length;
   const pendingRequests = requestList.filter(req => req.status === 'pending').length;
   const completedRequests = requestList.filter(req => req.status === 'completed').length;
 
-  // Filter functions
+  // Filter data untuk tab aktif
   const filteredRequests = requestList.filter(request => 
-    searchTerm === '' || 
-    request.status.toLowerCase().includes(searchTerm.toLowerCase())
+    searchTerm === '' || request.id.toString().includes(searchTerm)
   );
 
-  const filteredStock = StockList.filter(stock =>
-    searchTerm === '' ||
-    stock.nama_barang.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStock = stokData.filter(stock =>
+    searchTerm === '' || stock.nama_barang.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+
+  // // Filter functions
+  // const filteredRequests = requestList.filter(request => 
+  //   searchTerm === '' || 
+  //   request.status.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
+  // const filteredStock = StockList.filter(stock =>
+  //   searchTerm === '' ||
+  //   stock.nama_barang.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
 
   const robot1Data = robots[0] || { 
     robotId: "AMR 1",
@@ -403,37 +414,36 @@ const WHPage = () => {
           {/* Robot Cards */}
           <div className="lg:col-span-2 grid grid-cols-2 gap-4">
             <MiniCardRobot
-              robot={robot1Data}
-              indicatorStatus={indicatorStatus}
-              ledType="led1"
-              pageType="wh"
-              darkMode={true}
-            />
-            <MiniCardRobot
               robot={robot2Data}
               indicatorStatus={indicatorStatus}
               ledType="led2"
               pageType="user"
               darkMode={true}
             />
+            <MiniCardRobot
+              robot={robot1Data}
+              indicatorStatus={indicatorStatus}
+              ledType="led1"
+              pageType="wh"
+              darkMode={true}
+            />
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <StatsCard
             title="Total Stok"
             value={totalStock}
             icon={Database}
             color="text-blue-400"
-            trend="+12%"
           />
-          <StatsCard
+          {/* <StatsCard
             title="Stok Rendah"
             value={lowStockItems}
             icon={AlertCircle}
             color="text-amber-400"
-          />
+          /> */}
           <StatsCard
             title="Request Pending"
             value={pendingRequests}
@@ -448,23 +458,9 @@ const WHPage = () => {
           />
         </div>
 
-        {/* Action Buttons */}
+
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* <button 
-            onClick={runAllRobots}
-            disabled={isRunning}
-            className="group relative overflow-hidden bg-gradient-to-r from-indigo-600 to-indigo-700 
-              text-white px-6 py-4 rounded-xl font-semibold transition-all duration-300 
-              hover:shadow-2xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex-1"
-          >
-            <div className="relative z-10 flex items-center justify-center gap-3">
-              <PlayCircle className="w-5 h-5" />
-              {isRunning ? "MENJALANKAN ROBOT..." : "Jalankan Robot WH"}
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-indigo-800 
-              translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-          </button> */}
-          
+
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -482,8 +478,8 @@ const WHPage = () => {
         {/* Tab Navigation */}
         <div className="flex space-x-1 bg-gray-800/30 backdrop-blur-sm rounded-xl p-1 border border-gray-700/50 mb-6">
           {[
-            { id: 'requests', label: 'Request Barang', icon: Package },
-            { id: 'stock', label: 'Stok Barang', icon: Box },
+            { id: 'requests', label: 'All Request Package', icon: Package },
+            { id: 'stock', label: 'Stock Package', icon: Box },
             { id: 'counter', label: 'Counter', icon: Activity }
           ].map((tab) => (
             <button
@@ -508,7 +504,7 @@ const WHPage = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Package className="w-6 h-6 text-indigo-400" />
-                Daftar Request Barang
+                Package Request List
               </h2>
               
               <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
@@ -529,7 +525,7 @@ const WHPage = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Box className="w-6 h-6 text-indigo-400" />
-                Daftar Stok Barang
+                Package Stock List
               </h2>
               
               <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
@@ -546,19 +542,19 @@ const WHPage = () => {
 
               {/* Package Info */}
               <div className="mt-6 p-4 bg-gray-900/50 rounded-xl border border-gray-700/50">
-                <h3 className="text-lg font-semibold text-white mb-3">Info Kombinasi Paket:</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">Package Composition Information:</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
                     <h4 className="text-emerald-400 font-semibold mb-2">Paket A</h4>
-                    <p className="text-sm text-gray-300">2 Piston, 1 Valve, 3 Motor</p>
+                    <p className="text-sm text-gray-300">2 Photoelectric, 1 Limit Switch, 3 Inductive</p>
                   </div>
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
                     <h4 className="text-blue-400 font-semibold mb-2">Paket B</h4>
-                    <p className="text-sm text-gray-300">1 Piston, 3 Valve</p>
+                    <p className="text-sm text-gray-300">1 Photoelectric, 3 Limit Switch</p>
                   </div>
                   <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
                     <h4 className="text-purple-400 font-semibold mb-2">Paket C</h4>
-                    <p className="text-sm text-gray-300">4 Piston, 1 Valve, 1 Motor</p>
+                    <p className="text-sm text-gray-300">4 Photoelectric, 1 Limit Switch, 1 Inductive</p>
                   </div>
                 </div>
               </div>
@@ -569,7 +565,7 @@ const WHPage = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Activity className="w-6 h-6 text-indigo-400" />
-                Counter Barang
+                Counter Box
               </h2>
               
               <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700/50">

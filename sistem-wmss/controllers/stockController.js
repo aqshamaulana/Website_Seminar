@@ -61,15 +61,15 @@ exports.updateStock = async (req, res) => {
   try {
     // Update stok untuk paket_a
     if (paket_a > 0) {
-      await Stock.decrement({ jumlah: paket_a }, { where: { nama_barang: 'piston' } });
+      await Stock.decrement({ jumlah: paket_a }, { where: { nama_barang: 'Photoelectric' } });
     }
     // Update stok untuk paket_b
     if (paket_b > 0) {
-      await Stock.decrement({ jumlah: paket_b }, { where: { nama_barang: 'valve' } });
+      await Stock.decrement({ jumlah: paket_b }, { where: { nama_barang: 'limit switch' } });
     }
     // Update stok untuk paket_c
     if (paket_c > 0) {
-      await Stock.decrement({ jumlah: paket_c }, { where: { nama_barang: 'motor' } });
+      await Stock.decrement({ jumlah: paket_c }, { where: { nama_barang: 'Inductive' } });
     }
     res.status(200).json({ message: 'Stok berhasil diperbarui' });
   } catch (error) {
@@ -87,7 +87,7 @@ exports.addStok = async (req, res) => {
 
   try {
     // Cari atau buat record untuk setiap jenis barang
-    const barangTypes = ['piston', 'valve', 'motor'];
+    const barangTypes = ['Photoelectric', 'limit switch', 'Inductive'];
     
     for (const namaBarang of barangTypes) {
       // Cari stock item berdasarkan nama_barang
@@ -115,21 +115,21 @@ exports.addStok = async (req, res) => {
       if (a > 0) {
         const multiplier = Stock.paketKombinasi.a[namaBarang] || 0;
         totalPenambahanJumlah += a * multiplier;
-        stockItem.paket_a += a; // Tambah counter paket_a
+        stockItem.paket_a += a;
       }
 
       // Paket B: piston: 1, valve: 3
       if (b > 0) {
         const multiplier = Stock.paketKombinasi.b[namaBarang] || 0;
         totalPenambahanJumlah += b * multiplier;
-        stockItem.paket_b += b; // Tambah counter paket_b
+        stockItem.paket_b += b;
       }
 
       // Paket C: piston: 4, valve: 1, motor: 1
       if (c > 0) {
         const multiplier = Stock.paketKombinasi.c[namaBarang] || 0;
         totalPenambahanJumlah += c * multiplier;
-        stockItem.paket_c += c; // Tambah counter paket_c
+        stockItem.paket_c += c;
       }
 
       // Update jumlah total
@@ -183,29 +183,29 @@ exports.triggerPengurangan = async (req, res) => {
     
     // Hitung total kebutuhan komponen
     const totalKebutuhan = {
-      piston: 0,
-      valve: 0,
-      motor: 0
+      'Photoelectric': 0,
+      'limit switch': 0,
+      'Inductive': 0
     };
 
     // Paket A: piston: 2, valve: 1, motor: 3
     if (paket_a > 0) {
-      totalKebutuhan.piston += paket_a * 2;
-      totalKebutuhan.valve += paket_a * 1;
-      totalKebutuhan.motor += paket_a * 3;
+      totalKebutuhan['Photoelectric'] += paket_a * 2;
+      totalKebutuhan['limit switch'] += paket_a * 1;
+      totalKebutuhan['Inductive'] += paket_a * 3;
     }
 
     // Paket B: piston: 1, valve: 3
     if (paket_b > 0) {
-      totalKebutuhan.piston += paket_b * 1;
-      totalKebutuhan.valve += paket_b * 3;
+      totalKebutuhan['Photoelectric'] += paket_b * 1;
+      totalKebutuhan['limit switch'] += paket_b * 3;
     }
 
     // Paket C: piston: 4, valve: 1, motor: 1
     if (paket_c > 0) {
-      totalKebutuhan.piston += paket_c * 4;
-      totalKebutuhan.valve += paket_c * 1;
-      totalKebutuhan.motor += paket_c * 1;
+      totalKebutuhan['Photoelectric'] += paket_c * 4;
+      totalKebutuhan['limit switch'] += paket_c * 1;
+      totalKebutuhan['Inductive'] += paket_c * 1;
     }
 
     // Cek stok cukup

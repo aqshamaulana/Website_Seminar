@@ -1,7 +1,8 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const sequelize = require('../config/database'); // Sesuaikan path jika perlu
 
 const Request = sequelize.define('Request', {
+
   paket_a: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
@@ -17,36 +18,17 @@ const Request = sequelize.define('Request', {
     defaultValue: 0,
     allowNull: false
   },
-  total_piston_qty: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  total_valve_qty: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  total_motor_qty: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
   requested_by: {
     type: DataTypes.STRING,
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('pending', 'completed'),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('pending', 'processing', 'done'),
+    defaultValue: 'pending',
+    allowNull: false
   },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  }
 }, {
-  tableName: 'requests',
+  tableName: 'requests', // pastikan nama tabel sesuai
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

@@ -1,45 +1,42 @@
 import React from "react";
-import { Package, CheckCircle } from "lucide-react";
+import { Check,  MapPin } from "lucide-react";
 
-const DockPoint = ({ dockNumber, isActive, isPassed, colors }) => {
+const DockPoint = ({ dockNumber, label, isActive, isPassed, colors }) => {
   return (
-    <div className="flex flex-col items-center">
-      {/* Dock Icon */}
-      <div className="relative">
-        {/* Glow effect for active dock */}
+    <div className="relative flex flex-col items-center group w-24">
+      {/* Dock Icon & Ring */}
+      <div className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2
+        ${isActive
+          ? `${colors.bg} ${colors.borderStrong} shadow-lg`
+          : isPassed
+            ? `${colors.bgLight} ${colors.border}`
+            : 'bg-gray-800 border-gray-700'
+        }`}
+      >
+        {/* Outer pulse ring for active state */}
         {isActive && (
-          <div className={`absolute inset-0 w-16 h-16 ${colors.bg} rounded-full blur-xl opacity-50 animate-pulse`}></div>
+          <div className={`absolute w-full h-full rounded-full ${colors.bg} animate-ping`}></div>
         )}
-        
-        {/* Main dock circle */}
-        <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${
-          isActive 
-            ? `${colors.bg} ${colors.glow} shadow-lg` 
-            : isPassed 
-              ? `${colors.bgLight} border-2 ${colors.border}` 
-              : 'bg-gray-800 border-2 border-gray-700'
-        }`}>
-          {isActive ? (
-            <Package className="w-6 h-6 text-white" />
-          ) : isPassed ? (
-            <CheckCircle className={`w-6 h-6 ${colors.text}`} />
+
+        {/* Inner Icon */}
+        <div className="relative z-10">
+          {isPassed ? (
+            <Check className={`w-6 h-6 ${colors.textStrong}`} />
           ) : (
-            <span className="text-gray-400 font-semibold">{dockNumber}</span>
+            <MapPin className={`w-6 h-6 ${isActive ? 'text-white' : 'text-gray-500'}`} />
           )}
         </div>
       </div>
 
       {/* Dock Label */}
-      <p className={`mt-2 text-sm font-medium ${
-        isActive || isPassed ? 'text-white' : 'text-gray-500'
-      }`}>
-        Dock {dockNumber}
-      </p>
-
-      {/* Status text */}
-      {isActive && (
-        <p className={`text-xs ${colors.text} mt-1`}>Current</p>
-      )}
+      <div className="mt-3 text-center">
+        <p className="text-xs text-gray-400">Step {dockNumber}</p>
+        <p className={`font-semibold text-sm break-words transition-colors
+          ${isActive || isPassed ? 'text-white' : 'text-gray-500'}`}
+        >
+          {label}
+        </p>
+      </div>
     </div>
   );
 };

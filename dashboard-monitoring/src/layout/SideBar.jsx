@@ -5,7 +5,6 @@ import {
   Monitor, 
   Bot, 
   History, 
-  UserCircle2,
   MailCheck,
   ChevronLeft,
   Activity
@@ -40,7 +39,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
     { 
       icon: Bot, 
-      label: "UR Control", 
+      label: "UR ", 
       to: "/ur", 
       badge: null,
       description: "Robot Control"
@@ -49,14 +48,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: History, 
       label: "History", 
       to: "/history", 
-      badge: "New",
+      badge: null,
       description: "Activity Logs"
     },
     { 
       icon: MailCheck, 
       label: "Tracking", 
       to: "/tracking", 
-      badge: "3",
+      badge: null,
       description: "Track Shipments"
     }
   ];
@@ -65,10 +64,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     <>
       {/* Modern Dark Sidebar with Glass Effect */}
       <aside 
-        className={`fixed top-0 left-0 z-50 h-screen transition-all duration-500 ease-out
-        ${isOpen ? "w-80" : "w-24"} 
-        bg-gray-900/95 backdrop-blur-xl border-r border-gray-800 shadow-2xl`}
-      >
+          className={`fixed top-0 left-0 z-50 h-screen transition-all duration-500 ease-out
+          ${isOpen ? "w-80" : "w-24"} 
+          bg-gray-900/95 backdrop-blur-xl border-r border-gray-800 shadow-2xl
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        >
         {/* Decorative gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 via-transparent to-purple-900/10 pointer-events-none" />
         
@@ -92,7 +92,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               {isOpen && (
                 <div className="overflow-hidden">
                   <h2 className="text-xl font-bold text-gray-100 tracking-tight">
-                    SSD System
+                    Surya Sarana Dinamika
                   </h2>
                   <p className="text-xs text-gray-400 font-medium">
                     Smart Management
@@ -145,14 +145,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </nav>
 
         {/* Profile Section */}
-        <div className={`relative border-t border-gray-800 ${isOpen ? 'p-4' : 'p-3'}`}>
+        {/* <div className={`relative border-t border-gray-800 ${isOpen ? 'p-4' : 'p-3'}`}>
           <NavLink 
             to="/admin"
             className="group flex items-center gap-3 p-3 rounded-xl hover:bg-gray-800 
               transition-all duration-300"
           >
             {/* Avatar with gradient border */}
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 
                 rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
               <div className="relative rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-[2px]">
@@ -160,16 +160,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   <UserCircle2 size={isOpen ? 32 : 24} className="text-gray-300" />
                 </div>
               </div>
-            </div>
+            </div> */}
             
-            {isOpen && (
+            {/* {isOpen && (
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-100">Admin User</p>
                 <p className="text-xs text-gray-400">View Profile</p>
               </div>
-            )}
-          </NavLink>
-        </div>
+            )} */}
+          {/* </NavLink> */}
+        {/* </div> */} 
       </aside>
 
       {/* Mobile Backdrop */}
@@ -278,20 +278,20 @@ const NavItem = ({ icon: Icon, label, to, badge, description, isOpen, index, hov
 
 export default Sidebar;
 
-// Add to your global CSS
-const globalStyles = `
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+// // Add to your global CSS
+// const globalStyles = `
+// @keyframes slideIn {
+//   from {
+//     opacity: 0;
+//     transform: translateY(-5px);
+//   }
+//   to {
+//     opacity: 1;
+//     transform: translateY(0);
+//   }
+// }
 
-.animate-slideIn {
-  animation: slideIn 0.2s ease-out;
-}
-`;
+// .animate-slideIn {
+//   animation: slideIn 0.2s ease-out;
+// }
+// `;

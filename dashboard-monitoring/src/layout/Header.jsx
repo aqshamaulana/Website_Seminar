@@ -60,10 +60,10 @@ const Header = ({ onMenuClick }) => {
             
             <div>
               <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-100 tracking-tight">
-                DASHBOARD
+                Dashboard
               </h1>
               <p className="text-xs text-gray-400 font-medium hidden sm:block">
-                Real-time System Overview
+                Real-time System 
               </p>
             </div>
           </div>

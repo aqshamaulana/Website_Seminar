@@ -29,9 +29,9 @@ const Stock = sequelize.define('Stock', {
 
 // Static method untuk operasi khusus
 Stock.paketKombinasi = {
-  a: { piston: 2, valve: 1, motor: 3 },
-  b: { piston: 1, valve: 3 },
-  c: { piston: 4, valve: 1, motor: 1 }
+  a: { 'Photoelectric': 2, 'limit switch': 1, 'Inductive': 3 },
+  b: { 'Photoelectric': 1, 'limit switch': 3, 'Inductive': 0 },
+  c: { 'Photoelectric': 4, 'limit switch': 1, 'Inductive': 1 }
 };
 
 Stock.getTotalPaket = async () => {

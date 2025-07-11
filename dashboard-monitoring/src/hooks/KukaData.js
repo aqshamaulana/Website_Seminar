@@ -1,5 +1,5 @@
 // KukaData.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user") => {
   const [robots, setRobots] = useState([]);
@@ -7,9 +7,11 @@ const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user
   const [indicatorStatus, setIndicatorStatus] = useState({ led1: "OFF", led2: "OFF" });
   const [isRunning, setIsRunning] = useState(false);
 
+  const [historySocket, setHistorySocket] = useState(null);
+
   // Mendapatkan data robot
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:1880/ws/kuka");
+    const socket = new WebSocket(`${process.env.REACT_APP_WEBSOCKET_URL}/ws/kuka`);
 
     socket.onopen = () => {
       console.log("Koneksi WebSocket data robot dibuka");
@@ -41,7 +43,7 @@ const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user
   // WebSocket untuk tombol dengan topik yang sesuai
   useEffect(() => {
     // Menggunakan endpoint WebSocket yang benar berdasarkan buttonType
-    const wsEndpoint = buttonType === "amr1" ? "ws://localhost:1880/buttonamr1" : "ws://localhost:1880/buttonamr2";
+    const wsEndpoint = buttonType === "amr1" ? `${process.env.REACT_APP_WEBSOCKET_URL}/buttonamr1` : `${process.env.REACT_APP_WEBSOCKET_URL}/buttonamr2`;
     const socket = new WebSocket(wsEndpoint);
     
     // Mengatur topik pesan sesuai dengan endpoint WebSocket
@@ -66,7 +68,7 @@ const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user
 
   // WebSocket untuk LED
   useEffect(() => {
-    const ledSocket = new WebSocket("ws://localhost:1880/led");
+    const ledSocket = new WebSocket(`${process.env.REACT_APP_WEBSOCKET_URL}/led`);
   
     ledSocket.onopen = () => {
       console.log(`WebSocket LED terhubung pada halaman ${pageType}`);
@@ -90,8 +92,7 @@ const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user
     };
   }, [pageType]);  
 
-
-  const sendCommand = async (robotId, command) => {
+  const sendCommand = useCallback (async (robotId, command) => {
     try {
       const response = await fetch(`http://localhost:5000/api/robot/${robotId}/${command}`, {
         method: "POST",
@@ -101,49 +102,81 @@ const useKukaLiveData = (buttonType = "amr1", ledType = "led1", pageType = "user
     } catch (error) {
       console.error("Gagal mengirim perintah:", error);
     }
-  };
+  }, []);
 
-  const saveHistory = async (robot_id, status, timestamp) => {
-    try {
-      await fetch("http://localhost:1880/api/history", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ robot_id, status, timestamp })
-      });
-      console.log("Riwayat tersimpan");
-    } catch (error) {
-      console.error("Gagal menyimpan riwayat:", error);
-    }
-  };
+  useEffect(() => {
+    const socket = new WebSocket(`${process.env.REACT_APP_WEBSOCKET_URL}/ws/history`);
 
-  const runAllRobots = async () => {
-    if (amrSocket && amrSocket.readyState === WebSocket.OPEN) {
+    socket.onopen = () => {
+      console.log("History WebSocket connected");
+      setHistorySocket(socket); // Simpan instance socket ke state
+    };
+
+    socket.onclose = () => {
+      console.log("History WebSocket disconnected");
+      setHistorySocket(null); // Hapus instance saat koneksi tertutup
+    };
+
+    socket.onerror = (error) => {
+      console.error("History WebSocket Error:", error);
+    };
+
+    // Cleanup saat komponen di-unmount
+    return () => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    };
+  }, []);
+
+  const runAllRobots = useCallback(async () => {
+
+    const targetRobotIndex = buttonType === "amr1" ? 0 : 1;
+    const targetRobot = robots[targetRobotIndex];
+
+    if (amrSocket && amrSocket.readyState === WebSocket.OPEN && targetRobot) {
       setIsRunning(true);
-  
+
       try {
-        // Mengirim nilai "1" sebagai payload dengan topik yang benar
         amrSocket.send("1");
         console.log(`Pemicu AMR ${buttonType} dikirim dari halaman ${pageType}`);
-      
+
         await new Promise((resolve) => setTimeout(resolve, 500));
-      
+
         for (const robot of robots) {
+          // Kirim perintah start ke robot (tetap sama)
           await sendCommand(robot.robotId, "start");
-          await saveHistory(robot.robotId, "moving", new Date().toISOString());
+
+          // ---- BAGIAN YANG DIGANTI ----
+          // Kirim riwayat menggunakan WebSocket, bukan fetch
+          if (historySocket && historySocket.readyState === WebSocket.OPEN) {
+            const historyData = {
+              robot_id: robot.robotId,
+              status: "moving",
+              timestamp: new Date().toISOString()
+            };
+            historySocket.send(JSON.stringify(historyData));
+          } else {
+            console.error("History WebSocket tidak siap, riwayat untuk robot " + robot.robotId + " tidak terkirim.");
+          }
+          // ---- AKHIR BAGIAN YANG DIGANTI ----
         }
-      
-        console.log("Semua robot dimulai dan riwayat disimpan");
+
+        console.log("Semua robot dimulai dan riwayat dikirim melalui WebSocket");
       } catch (error) {
         console.error("Error saat menjalankan robot:", error);
       } finally {
         setIsRunning(false);
       }
-    } else {
-      console.warn("WebSocket belum siap");
+     } else {
+      // Pesan error jika ada yang belum siap
+      if (!targetRobot) {
+        console.warn("Robot target tidak ditemukan.");
+      } else {
+        console.warn("WebSocket pemicu AMR belum siap.");
+      }
     }
-  };
+  }, [amrSocket, robots, historySocket, buttonType, pageType, sendCommand]);
   
   return {
     robots,

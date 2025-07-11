@@ -1,56 +1,56 @@
 import React from "react";
 import { useFlowStatus } from "../hooks/useFlowStatus";
-import useKukaLiveData from "../hooks/KukaData";
 import TrackingCard from "../components/TrackingCard";
+import { AMR1_LABELS, AMR2_LABELS } from '../config/robotConfig';
+import { getCurrentDockInfo } from "../config/robotConfig";
+
 
 const TrackingPage = () => {
-  const statusAmr1 = useFlowStatus("/statusAmr1");
-  const statusAmr2 = useFlowStatus("/statusAmr2");
-  const { robots } = useKukaLiveData("amr1", "led1", "tracking");
+  const statusAmr1 = useFlowStatus("/statusAmr1"); // Data untuk 3 dok
+  const statusAmr2 = useFlowStatus("/statusAmr2"); // Data untuk 4 dok
 
-  const robot1Data = robots[0] || { batteryLevel: "0", status: "unknown" };
-  const robot2Data = robots[1] || { batteryLevel: "0", status: "unknown" };
+  // const getCurrentDockInfo = (status, labels) => {
+  //   const dockIndex = status.findIndex((val) => val === 1);
+  //   const activeLabel = labels[dockIndex]; // Ambil label kustom berdasarkan indeks
 
-  const getCurrentDockInfo = (status) => {
-    const dockIndex = status.findIndex((val) => val === 1);
-    return {
-      dockNumber: dockIndex !== -1 ? dockIndex + 1 : null,
-      message: dockIndex !== -1
-        ? `Barang telah sampai di Dock ${dockIndex + 1}`
-        : "Menunggu aktivitas...",
-      isActive: dockIndex !== -1
-    };
-  };
+  //   return {
+  //     dockNumber: dockIndex !== -1 ? dockIndex + 1 : null,
+  //     // Buat pesan baru menggunakan label kustom
+  //     message: dockIndex !== -1
+  //       ? `Saat ini :  ${activeLabel}`
+  //       : "Menunggu aktivitas...",
+  //     isActive: dockIndex !== -1
+  //   };
+  // };
 
   return (
-    <div className="min-h-screen bg-dark-primary p-6">
-      {/* Header */}
-      {/* <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Tracking System</h1>
-        <p className="text-gray-400">Monitor pergerakan AMR secara real-time</p>
-      </div> */}
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-3xl font-bold text-white">AMR Tracking</h1>
+        <p className="text-gray-400 mt-1">Real-Time Monitoring of AMR movement.</p>
+      </header>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* AMR 1 */}
+      {/* 4. Tampilkan kartu dengan data dan label yang sesuai */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        
+        {/* Kartu untuk AMR 1 */}
         <TrackingCard
-          amrNumber={1}
-          title="AMR 1 "
+          title="AMR 1 - Manipulator Robot"
           status={statusAmr1}
-          dockInfo={getCurrentDockInfo(statusAmr1)}
+          dockInfo={getCurrentDockInfo(statusAmr1, AMR1_LABELS)}
           accentColor="green"
-          robotData={robot1Data}
+          dockLabels={AMR1_LABELS} // <-- Teruskan label kustom
         />
         
-        {/* AMR 2 */}
+        {/* Kartu untuk AMR 2 */}
         <TrackingCard
-          amrNumber={2}
-          title="AMR 2 - Manipulator Robot"
+          title="AMR 2"
           status={statusAmr2}
-          dockInfo={getCurrentDockInfo(statusAmr2)}
+          dockInfo={getCurrentDockInfo(statusAmr2, AMR2_LABELS)}
           accentColor="red"
-          robotData={robot2Data}
+          dockLabels={AMR2_LABELS} // <-- Teruskan label kustom
         />
+
       </div>
     </div>
   );

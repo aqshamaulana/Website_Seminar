@@ -12,7 +12,7 @@ import {
   CheckCircle,
   ArrowUp,
   ArrowDown,
-  Cpu,
+  Bot,
   Server,
   BarChart3,
   Navigation
@@ -21,6 +21,14 @@ import useRequestData from '../hooks/useRequestData';
 import { useFlowStatus } from "../hooks/useFlowStatus";
 import TrackingCard from '../components/TrackingCard';
 import useKukaLiveData from "../hooks/KukaData";
+import UR30Img from "../assets/RobotUR.png";
+import URCobotImg from "../assets/cobot.png"; // Ganti dengan gambar lengan robot yang sesuai
+import RobotUr from "../assets/ur5e.png"; // Gambar default untuk UR5e
+import useURData from '../hooks/useURdata';
+import RobotSummaryCard from '../components/RobotSummaryCard';
+import { AMR1_LABELS, AMR2_LABELS } from '../config/robotConfig';
+import { getCurrentDockInfo } from "../config/robotConfig";
+import CounterBarang from '../components/CounterBarang';
 
 // Animated Background Component
 const AnimatedBackground = () => (
@@ -30,6 +38,7 @@ const AnimatedBackground = () => (
     <div className="absolute top-40 left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-blob animation-delay-4000"></div>
   </div>
 );
+
 
 // Enhanced Mini Robot Card
 const MiniRobotCard = ({ robot, indicatorStatus, ledType, title, accentColor, index }) => {
@@ -71,12 +80,12 @@ const MiniRobotCard = ({ robot, indicatorStatus, ledType, title, accentColor, in
             <div className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${
               accentColor === 'green' ? 'from-emerald-500 to-emerald-600' : 'from-rose-500 to-rose-600'
             } flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
-              <Cpu className="w-6 h-6 text-white" />
+              <Bot className="w-6 h-6 text-white" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">{title}</h4>
-              <p className="text-xs text-gray-400">AMR Unit {index + 1}</p>
+              <p className="text-xs text-gray-400">Autonomouse Mobile Robot</p>
             </div>
           </div>
           <div className="relative">
@@ -217,17 +226,17 @@ const ActivityItem = ({ request, index }) => {
     pending: {
       colors: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
       icon: Clock,
-      label: 'Menunggu'
+      label: 'Wait'
     },
     completed: {
       colors: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       icon: CheckCircle,
-      label: 'Selesai'
+      label: 'Finish'
     },
     processing: {
       colors: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       icon: Activity,
-      label: 'Diproses'
+      label: 'Processed'
     }
   };
 
@@ -332,6 +341,7 @@ const HomePage = () => {
   const { totalPaket, requestList, error } = useRequestData();
   const { robots, indicatorStatus } = useKukaLiveData("amr2", "led2", "user");
   const [currentTime, setCurrentTime] = useState(new Date());
+  
 
   // Update time every second
   useEffect(() => {
@@ -348,22 +358,32 @@ const HomePage = () => {
     return r.status === 'completed' && new Date(r.created_at).toDateString() === today;
   }).length;
 
+  const { urData: ur30Data } = useURData('ur30');
+  const { urData: urCobotData } = useURData('urcobott');
+  const { urData: ur5eData } = useURData('ur5e');
+
+  const urRobotData = [
+    { name: "UR30", image: UR30Img, status: ur30Data.robotStatus, runTime: ur30Data.runTime, type: 'UR' },
+    { name: "UR5e", image: RobotUr, status: ur5eData.robotStatus, runTime: ur5eData.runTime, type: 'UR' },
+    { name: "AMR + UR Manipulator", image: URCobotImg, status: urCobotData.robotStatus, runTime: urCobotData.runTime, type: 'UR' },
+  ];
+
   const statusAmr1 = useFlowStatus("/statusAmr1");
   const statusAmr2 = useFlowStatus("/statusAmr2");
 
   const robot1Data = robots[0] || { batteryLevel: "0", status: "unknown" };
   const robot2Data = robots[1] || { batteryLevel: "0", status: "unknown" };
 
-  const getCurrentDockInfo = (status) => {
-    const dockIndex = status.findIndex((val) => val === 1);
-    return {
-      dockNumber: dockIndex !== -1 ? dockIndex + 1 : null,
-      message: dockIndex !== -1
-        ? `Barang telah sampai di Dock ${dockIndex + 1}`
-        : "Menunggu aktivitas...",
-      isActive: dockIndex !== -1
-    };
-  };
+  // const getCurrentDockInfo = (status) => {
+  //   const dockIndex = status.findIndex((val) => val === 1);
+  //   return {
+  //     dockNumber: dockIndex !== -1 ? dockIndex + 1 : null,
+  //     message: dockIndex !== -1
+  //       ? `Barang telah sampai di Dock ${dockIndex + 1}`
+  //       : "Menunggu aktivitas...",
+  //     isActive: dockIndex !== -1
+  //   };
+  // };
 
   // Recent activities (last 8)
   const recentActivities = requestList.slice(0, 8);
@@ -426,13 +446,12 @@ const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             icon={TrendingUp}
-            title="Total Paket Keluar"
+            title="Total Outbound Package"
             value={totalPaketKeluar}
-            subtitle="Semua waktu"
-            trend={12}
+            subtitle="All Time"
             color="green"
           />
-          <StatsCard
+          <CounterBarang darkMode={true}
             icon={Activity}
             title="Robot Aktif"
             value={`${activeRobots}/${robots.length}`}
@@ -443,16 +462,14 @@ const HomePage = () => {
             icon={Clock}
             title="Request Pending"
             value={pendingRequests}
-            subtitle="Menunggu proses"
-            trend={-5}
+            subtitle="Waiting procces"
             color="amber"
           />
           <StatsCard
             icon={CheckCircle}
-            title="Selesai Hari Ini"
+            title="Today Finish"
             value={completedToday}
-            subtitle="Request sukses"
-            trend={8}
+            subtitle="Request Completed"
             color="purple"
           />
         </div>
@@ -504,43 +521,54 @@ const HomePage = () => {
               </div>
               <div className="space-y-4">
                 <MiniRobotCard
-                  robot={robot1Data}
-                  indicatorStatus={indicatorStatus}
-                  ledType="led1"
-                  title="Warehouse Robot"
-                  accentColor="green"
-                  index={0}
-                />
-                <MiniRobotCard
                   robot={robot2Data}
                   indicatorStatus={indicatorStatus}
                   ledType="led2"
-                  title="User Robot"
-                  accentColor="red"
+                  title="AMR 1 - MANIPULATOR ROBOT"
+                  accentColor="green"
                   index={1}
+                />
+                <MiniRobotCard
+                  robot={robot1Data}
+                  indicatorStatus={indicatorStatus}
+                  ledType="led1"
+                  title="AMR 2 "
+                  accentColor="red"
+                  index={0}
                 />
               </div>
             </div>
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {urRobotData.map(robot => (
+          <RobotSummaryCard
+            key={robot.name}
+            name={robot.name}
+            image={robot.image}
+            status={robot.status}
+            runTime={robot.runTime}
+            type={robot.type}
+          />
+           ))}
+        </div>
+
         {/* Tracking Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TrackingCard
-            amrNumber={1}
-            title="AMR 1 "
+            title="AMR 1 - Manipulator Robot"
             status={statusAmr1}
-            dockInfo={getCurrentDockInfo(statusAmr1)}
+            dockInfo={getCurrentDockInfo(statusAmr1, AMR1_LABELS)}
             accentColor="green"
-            robotData={robot1Data}
+            dockLabels={AMR1_LABELS} // <-- Teruskan label kustom
           />
           <TrackingCard
-            amrNumber={2}
-            title="AMR 2 - Manipulator Robot"
+            title="AMR 2"
             status={statusAmr2}
-            dockInfo={getCurrentDockInfo(statusAmr2)}
+            dockInfo={getCurrentDockInfo(statusAmr2, AMR2_LABELS)}
             accentColor="red"
-            robotData={robot2Data}
+            dockLabels={AMR2_LABELS} // <-- Teruskan label kustom
           />
         </div>
       </div>

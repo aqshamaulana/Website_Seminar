@@ -31,7 +31,7 @@ const CounterBarang = ({ darkMode = false }) => {
       }
 
       // PERBAIKAN 2: Gunakan path '/count' yang benar
-      const socket = new WebSocket("ws://localhost:1880/counting");
+      const socket = new WebSocket(`${process.env.REACT_APP_WEBSOCKET_URL}/counting`);
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -159,7 +159,7 @@ const CounterBarang = ({ darkMode = false }) => {
   return (
     <div className={`${darkMode ? 'bg-slate-800 text-gray-200' : 'bg-white'} p-4 rounded-2xl shadow-lg w-full max-w-xs mx-auto transition-colors duration-300`}>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">Jumlah Barang Diangkut</h2>
+        <h2 className="text-base font-semibold">Total Unit Count </h2>
         <div className="flex items-center space-x-2">
           {getStatusIcon()}
           <span className={`text-xs font-medium ${getStatusColor()} capitalize`}>

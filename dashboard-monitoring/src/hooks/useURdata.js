@@ -1,113 +1,79 @@
-// hooks/useURData.js
 import { useEffect, useState } from "react";
 
-const useURData = () => {
+// Hook sekarang menerima 'endpoint' sebagai argumen (misal: 'ur30', 'urcobot')
+const useURData = (endpoint) => {
   const [urData, setUrData] = useState(null);
-  const [kukaData] = useState(null);
   const [currentHistory, setCurrentHistory] = useState([]);
   
   const defaultURData = {
-    robotId: "UR30",
+    robotId: endpoint.toUpperCase(), // ID default berdasarkan endpoint
     robotStatus: false,
     alarmStatus: "None",
     toolStatus: "N/A",
     jointDegrees: [0, 0, 0, 0, 0, 0],
     runTime: 0,
     cycleCount: 0,
-    robotCurrent: 0, // Added robotCurrent to default data
-  };
-  
-  const defaultKukaData = {
-    robotId: "KUKA",
-    robotStatus: false,
-    alarmStatus: "None",
-    toolStatus: "N/A",
-    jointDegrees: [0, 0, 0, 0, 0, 0],
-    runTime: 0,
-    cycleCount: 0,
+    robotCurrent: 0,
   };
 
   useEffect(() => {
-    // WebSocket untuk UR Robot data (untuk current history)
-    const urSocket = new WebSocket("ws://localhost:1880/ur");
+    // Hentikan jika tidak ada endpoint yang diberikan
+    if (!endpoint) return;
+
+    // Buat koneksi WebSocket secara dinamis berdasarkan endpoint
+    const ws = new WebSocket(`${process.env.REACT_APP_WEBSOCKET_URL}/${endpoint}`);
     
-    urSocket.onmessage = (event) => {
+    ws.onopen = () => {
+      console.log(`WebSocket connected to /${endpoint}`);
+    };
+
+    ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         
-        // Update current history
-        const now = Date.now();
-        setCurrentHistory((prev) => {
-          const fiveMinutesAgo = now - 5 * 60 * 1000;
-          const filtered = prev.filter(item => item.timestamp >= fiveMinutesAgo);
-          
-          if (
-            filtered.length === 0 ||
-            now - filtered[filtered.length - 1].timestamp >= 15 * 1000
-          ) {
-            const timeLabel = new Date().toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit"
-            });
-            
-            return [
-              ...filtered,
+        // Update data lengkap untuk kartu
+        setUrData({
+          robotId: endpoint.toUpperCase(),
+          ...data
+        });
+
+        // Update riwayat untuk grafik (jika ada data robotCurrent)
+        if (data.robotCurrent !== undefined) {
+          const now = new Date();
+          setCurrentHistory(prev => {
+            const fiveMinutesAgo = now.getTime() - 5 * 60 * 1000;
+            // Filter data lama & tambahkan data baru
+            const updatedHistory = [
+              ...prev.filter(item => item.timestamp >= fiveMinutesAgo),
               {
-                time: timeLabel,
+                time: now.toLocaleTimeString("id-ID"),
                 current: data.robotCurrent,
-                timestamp: now
+                timestamp: now.getTime()
               }
             ];
-          }
-          return filtered;
-        });
+            // Batasi hanya 20 data point terakhir agar tidak terlalu berat
+            return updatedHistory.slice(-20);
+          });
+        }
       } catch (error) {
-        console.error("Failed to parse WebSocket data for UR:", error);
+        console.error(`Failed to parse WebSocket data for /${endpoint}:`, error);
       }
     };
     
-    urSocket.onerror = (error) => {
-      console.error("WebSocket error for UR:", error);
+    ws.onerror = (error) => {
+      console.error(`WebSocket error for /${endpoint}:`, error);
     };
 
-    // WebSocket untuk status robot UR (untuk status lengkap)
-    const statusSocket = new WebSocket("ws://localhost:1880/urcobot");
-    
-    statusSocket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        // Update urData dengan data lengkap dari WebSocket status
-        setUrData({
-          robotId: "UR5e", // Keep default robotId
-          robotStatus: data.robotStatus || false,
-          alarmStatus: data.alarmStatus || "None",
-          toolStatus: data.toolStatus || "N/A",
-          jointDegrees: data.jointDegrees || [0, 0, 0, 0, 0, 0],
-          runTime: data.runTime || 0,
-          cycleCount: data.cycleCount || 0,
-          robotCurrent: data.robotCurrent || 0, // Include current data
-        });
-      } catch (error) {
-        console.error("Failed to parse WebSocket data for UR status:", error);
-      }
-    };
-    
-    statusSocket.onerror = (error) => {
-      console.error("WebSocket error for UR status:", error);
-    };
-
-    // Cleanup function
+    // Fungsi cleanup untuk menutup koneksi
     return () => {
-      urSocket.close();
-      statusSocket.close();
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
     };
-  }, []);
+  }, [endpoint]); // useEffect ini akan berjalan ulang jika endpoint berubah
 
   return {
     urData: urData || defaultURData,
-    kukaData: kukaData || defaultKukaData,
     currentHistory,
   };
 };
